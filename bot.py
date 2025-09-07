@@ -9,6 +9,7 @@ import time
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 HISTORY = "history.json"
+CHANNEL_ID = os.getenv("CHANNEL_ID")
 posted_articles = {}
 
 
@@ -46,8 +47,19 @@ async def perform_rss_check():
             print(f"New article found: {latest.title}")
 
             posted_articles[latest.link] = time.time()
-
-            # Post to DC channel here 
+            
+            channel = bot.get_channel(CHANNEL_ID)
+            if channel:
+                embed = discord.Embed(
+                    title = latest.title,
+                    url = latest.link,
+                    description="A new article has been posted",
+                    color = discord.Color.blue()
+                )
+                embed.set_footer(text=feed.feed.title)
+                await channel.send(embed=embed)
+            else:
+                print(f"Error: Channel with ID {CHANNEL_ID} not found.")
         
         curr_time = time.time()
         three_hours = 3*60*60
