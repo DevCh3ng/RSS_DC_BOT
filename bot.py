@@ -25,13 +25,12 @@ bot = commands.Bot(command_prefix="-", intents=intents) # new bot instance
 def load_history():
     """Loads the history of posted article links from file."""
     global posted_articles
-    try:
-        with open(HISTORY, 'r') as f:
-            posted_articles = json.load(f)
-        print(f"Loaded {len(posted_articles)} articles from history.")
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("History file not found. Created Automatically")
-        posted_articles = {}
+    with open(HISTORY, 'r') as f:
+        if FileNotFoundError or json.JSONDecodeError:
+            print("History file not found. Created Automatically")
+            posted_articles = {}
+        posted_articles = json.load(f)
+    print(f"Loaded {len(posted_articles)} articles from history.")
 
 def save_history():
     with open(HISTORY, 'w') as f:
@@ -40,13 +39,13 @@ def save_history():
 def load_alerts():
     """Load alert.json"""
     global active_alerts
-    try:
-        with open(ALERTS, 'r') as f:
-            active_alerts = json.load(f)
-        print(f"Loaded {len(active_alerts)} active alerts.")
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("Alerts file not found or invalid. Starts with no alerts")
-        active_alerts = []
+    with open(ALERTS, 'r') as f:
+        if FileNotFoundError or json.JSONDecodeError:
+            print("Alerts file not found or invalid. Starts with no alerts")
+            active_alerts = []
+        active_alerts = json.load(f)
+    print(f"Loaded {len(active_alerts)} active alerts.")
+
 
 def save_alerts():
     """Saves current alerts to JSON file."""
@@ -110,6 +109,8 @@ async def on_ready():
 
     if not fetch_rss.is_running():
         fetch_rss.start()
+    if not check_prices.is_running():
+        check_prices.start()
 
 # Prefix command for :ping
 @bot.command(name="ping")
@@ -134,6 +135,28 @@ async def add_alert(prefix, crypto: str, condition: str, price: float):
     active_alerts.append(new_alert)
     save_alerts()
     await prefix.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
+
+@tasks.loop(seconds=60)
+async def check_prices():
+    await bot.wait_until_ready()
+    if not active_alerts: # empty
+        return
+    # get unique set of crypto ID from alerts
+    crypto_id = {alert['crypto'] for alert in active_alerts}
+    
+    # format id for CG API
+    id_str = ".".join(crypto_id)
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids_string}&vs_currencies=usd"
+
+    # api call here
+    async with aiohttp.ClientSession() as session:
+        async with session.get(url) as response:
+            if response.status == 200:
+                prices = await response.json()
+                print(f"Fetched prices: {prices}")
+            else:
+                print(f"Error fetching prices, status: {response.status}")
+
 
 @tasks.loop(minutes=10)
 async def fetch_rss():
