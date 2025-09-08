@@ -146,7 +146,7 @@ async def check_prices():
     
     # format id for CG API
     id_str = ".".join(crypto_id)
-    url = f"https://api.coingecko.com/api/v3/simple/price?ids={ids_string}&vs_currencies=usd"
+    url = f"https://api.coingecko.com/api/v3/simple/price?ids={id_str}&vs_currencies=usd"
 
     # api call here
     async with aiohttp.ClientSession() as session:
@@ -154,8 +154,35 @@ async def check_prices():
             if response.status == 200:
                 prices = await response.json()
                 print(f"Fetched prices: {prices}")
+                triggered_alerts = []
+                for alert in active_alerts:
+                    crypto = alert['crypto']
+                    if crypto in prices and 'usd' in prices[crypto]:
+                        curr_price = prices[crypto]['usd']
+                        condition = alert['condition']
+                        target_price = alert['price']
+
+                        alert_triggered = (condition == '>' and curr_price > target_price) or (condition == '<' and curr_price < target_price)
+                        if alert_triggered:
+                            print(f"ALERT TRIGGERED: User {alert['user_id']} for {crypto} {condition} {target_price}")
+                            user = await bot.fetch_user(alert['user_id'])
+                            if user:
+                                message = (
+                                    f"🔔 **Price Alert!** 🔔\n\n"
+                                    f"Your alert for **{crypto.capitalize()}** was triggered.\n"
+                                    f"Target: {condition} $ {target_price:,.2f}\n"
+                                    f"Current Price: ${curr_price:,.2f}"
+                                )
+                                await user.send(message)
+                                triggered_alerts.append(alert)
+                if triggered_alerts:
+                    active_alerts[:] = [alert for alert in active_alerts if alert not in triggered_alerts]
+                    save_alerts()
+
+
             else:
                 print(f"Error fetching prices, status: {response.status}")
+
 
 
 @tasks.loop(minutes=10)
