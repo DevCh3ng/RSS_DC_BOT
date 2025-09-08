@@ -151,6 +151,8 @@ async def check_prices():
     # api call here
     async with aiohttp.ClientSession() as session:
         async with session.get(url) as response:
+
+            # these nested if would be revisited someday
             if response.status == 200:
                 prices = await response.json()
                 print(f"Fetched prices: {prices}")
