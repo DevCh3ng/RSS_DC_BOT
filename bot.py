@@ -5,11 +5,14 @@ from dotenv import load_dotenv
 import feedparser
 import json
 import time
+import aiohttp
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 HISTORY = "history.json"
-CHANNEL_ID = os.getenv("CHANNEL_ID")
+ALERTS = "alerts.json"
+CID = os.getenv('CHANNEL_ID')
+CHANNEL_ID = int(CID)
 posted_articles = {}
 
 
@@ -91,8 +94,25 @@ async def on_ready():
 
 # Prefix command for :ping
 @bot.command(name="ping")
-async def prefix_ping(ctx):
-    await ctx.send("Pong!")
+async def prefix_ping(prefix):
+    await prefix.send("Pong!")
+
+@bot.group(invoke_without_command=True)
+async def alert(prefix):
+    await prefix.send("Alert command. Use `:alert add <crypto> <condition> <price>`")
+
+@alert.command (name="add")
+async def add_alert(prefix, crypto: str, condition: str, price: float):
+    if condition not in ['>', '<']:
+        await prefix.send("Invalid Condition. Please use `<` or `>`.")
+        return
+    new_alert={
+        'user_id' : prefix.author.id,
+        'crypto' : crypto.lower(),
+        'condition' : condition,
+        'price' : price
+    }
+    await prefix.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
 
 @tasks.loop(minutes=10)
 async def fetch_rss():
