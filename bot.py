@@ -14,6 +14,7 @@ ALERTS = "alerts.json"
 CID = os.getenv('CHANNEL_ID')
 CHANNEL_ID = int(CID)
 posted_articles = {}
+active_alerts = []
 
 
 intents = discord.Intents.default()
@@ -35,6 +36,22 @@ def load_history():
 def save_history():
     with open(HISTORY, 'w') as f:
         json.dump(posted_articles, f, indent = 4)
+
+def load_alerts():
+    """Load alert.json"""
+    global active_alerts
+    try:
+        with open(ALERTS, 'r') as f:
+            active_alerts = json.load(f)
+        print(f"Loaded {len(active_alerts)} active alerts.")
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Alerts file not found or invalid. Starts with no alerts")
+        active_alerts = []
+
+def save_alerts():
+    """Saves current alerts to JSON file."""
+    with open(ALERTS, 'w') as f:
+        json.dump(active_alerts, f, indent=4)
 
 async def perform_rss_check():
     """Main logic for fetching, parsing, and checking RSS feed"""
@@ -80,12 +97,14 @@ async def perform_rss_check():
     else:
         print(f"Could not find any articles in the feed: {crypto_url}")
 
+
 # event: on_ready
 # runs once it got connected to discord
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord')
     load_history()
+    load_alerts()
     print("Init RSS checking")
     await perform_rss_check()
 
@@ -112,6 +131,8 @@ async def add_alert(prefix, crypto: str, condition: str, price: float):
         'condition' : condition,
         'price' : price
     }
+    active_alerts.append(new_alert)
+    save_alerts()
     await prefix.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
 
 @tasks.loop(minutes=10)
