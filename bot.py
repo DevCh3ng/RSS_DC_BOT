@@ -79,6 +79,9 @@ async def perform_rss_check():
                     color = discord.Color.blue()
                 )
                 embed.set_footer(text=feed.feed.title)
+                if hasattr(latest, 'media_content') and latest.media_content:
+                    image_url = latest.media_content[0]['url']
+                    embed.set_image(url=image_url)
                 await channel.send(embed=embed)
             else:
                 print(f"Error: Channel with ID {CHANNEL_ID} not found.")
