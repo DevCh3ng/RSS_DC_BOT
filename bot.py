@@ -11,11 +11,14 @@ load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
 HISTORY = "history.json"
 ALERTS = "alerts.json"
+CONFIG = "configs.json"
 CID = os.getenv('CHANNEL_ID')
 CHANNEL_ID = int(CID)
 posted_articles = {}
 active_alerts = []
+bot_config = {}
 MIN_RSS_INTERVAL = 5
+DEFAULT_RSS_INTERVAL = 10
 
 
 intents = discord.Intents.default()
@@ -31,12 +34,8 @@ def load_history():
             posted_articles = json.load(f)
         print(f"Loaded {len(posted_articles)} articles from history.")
     except(FileNotFoundError, json.JSONDecodeError):
-        print("History file not found. Created Automatically")
+        print("History file not found. Creating")
         posted_articles = {}
-
-def save_history():
-    with open(HISTORY, 'w') as f:
-        json.dump(posted_articles, f, indent = 4)
 
 def load_alerts():
     """Load alert.json"""
@@ -44,17 +43,34 @@ def load_alerts():
     try:
         with open(ALERTS, 'r') as f:
             active_alerts = json.load(f)
-        print(f"Loaded {len(active_alerts)} active alerts.")
+        print(f"Loaded {len(active_alerts)} alerts from history.")
             
     except (FileNotFoundError, json.JSONDecodeError):
-            print("Alerts file not found or invalid. Starts with no alerts")
+            print("Alert file not found. Creating")
             active_alerts = []
 
+def load_configs():
+    """Load bot configs to configs.json"""
+    global bot_config 
+    try:
+        with open(CONFIG, 'r') as f:
+            bot_config = json.load(f)
+        print(f"Loaded {len(bot_config)} configs from history.")
+    except (FileNotFoundError, json.JSONDecodeError):
+        print("Config file not found. Creating")
+        bot_config = {}
+
+def save_history():
+    with open(HISTORY, 'w') as f:
+        json.dump(posted_articles, f, indent = 4)
+
 def save_alerts():
-    """Saves current alerts to JSON file."""
     with open(ALERTS, 'w') as f:
         json.dump(active_alerts, f, indent=4)
 
+def save_configs():
+    with open(CONFIG, 'w') as f:
+        json.dump(bot_config, f, indent=4)
 async def perform_rss_check():
     """Main logic for fetching, parsing, and checking RSS feed"""
     global posted_articles
@@ -110,6 +126,11 @@ async def on_ready():
     print(f'{bot.user} has connected to Discord')
     load_history()
     load_alerts()
+    load_configs()
+
+    interval = bot_config.get('rss_interval_minutes', DEFAULT_RSS_INTERVAL)
+    fetch_rss.change_interval(minutes = interval)
+
     print("Init RSS checking")
     await perform_rss_check()
 
@@ -138,7 +159,11 @@ async def set_rss_interval(prefix, new_interval: int):
     if new_interval < MIN_RSS_INTERVAL:
         await prefix.send(f"❌ Minimum RSS poll interval rate is **5 Minutes**.")
         return
-    fetch_rss.send(f"✅ RSS poll interval is now ** {new_interval} minutes**.")
+    fetch_rss.change_interval(minutes=new_interval)
+    bot_config['rss_interval_minutes'] = new_interval
+    save_configs()
+    await fetch_rss.send(f"✅ RSS poll interval is now ** {new_interval} minutes**.")
+
 @set_rss_interval.error
 async def interval_error(prefix,error):
     if isinstance(error, commands.MissingPermissions):
