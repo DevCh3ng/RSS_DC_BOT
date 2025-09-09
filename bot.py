@@ -6,7 +6,6 @@ import feedparser
 import json
 import time
 import aiohttp
-import pprint
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -16,6 +15,7 @@ CID = os.getenv('CHANNEL_ID')
 CHANNEL_ID = int(CID)
 posted_articles = {}
 active_alerts = []
+MIN_RSS_INTERVAL = 5
 
 
 intents = discord.Intents.default()
@@ -126,6 +126,28 @@ async def prefix_ping(prefix):
 @bot.group(invoke_without_command=True)
 async def alert(prefix):
     await prefix.send("Alert command. Use `:alert add <crypto> <condition> <price>`")
+
+@bot.group(invoke_without_command=True)
+async def rss(prefix):
+    curr_interval = fetch_rss.minutes
+    await prefix.send(f"RSS Settings. The curent check interval is **{curr_interval}** minutes. Use -rss interval <minutes> to change")
+    
+@rss.command(name="interval")
+@commands.has_permissions(administrator=True)
+async def set_rss_interval(prefix, new_interval: int):
+    if new_interval < MIN_RSS_INTERVAL:
+        await prefix.send(f"❌ Minimum RSS poll interval rate is **5 Minutes**.")
+        return
+    fetch_rss.send(f"✅ RSS poll interval is now ** {new_interval} minutes**.")
+@set_rss_interval.error
+async def interval_error(prefix,error):
+    if isinstance(error, commands.MissingPermissions):
+        await prefix.send(f"❌ **Error:** You don't have any previledge to use this command")
+    elif isinstance(error, commands.BadArgument):
+        await prefix.send(f"❌ **Error:** Please provide a valid number")
+    else:
+        print(f"RSS command error: {error}")
+        await prefix.send("An unexpected error occured")
 
 @alert.command (name="add")
 async def add_alert(prefix, crypto: str, condition: str, price: float):
