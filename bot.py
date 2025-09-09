@@ -6,6 +6,7 @@ import feedparser
 import json
 import time
 import aiohttp
+import pprint
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -25,12 +26,13 @@ bot = commands.Bot(command_prefix="-", intents=intents) # new bot instance
 def load_history():
     """Loads the history of posted article links from file."""
     global posted_articles
-    with open(HISTORY, 'r') as f:
-        if FileNotFoundError or json.JSONDecodeError:
-            print("History file not found. Created Automatically")
-            posted_articles = {}
-        posted_articles = json.load(f)
-    print(f"Loaded {len(posted_articles)} articles from history.")
+    try: 
+        with open(HISTORY, 'r') as f:    
+            posted_articles = json.load(f)
+        print(f"Loaded {len(posted_articles)} articles from history.")
+    except(FileNotFoundError, json.JSONDecodeError):
+        print("History file not found. Created Automatically")
+        posted_articles = {}
 
 def save_history():
     with open(HISTORY, 'w') as f:
@@ -39,13 +41,14 @@ def save_history():
 def load_alerts():
     """Load alert.json"""
     global active_alerts
-    with open(ALERTS, 'r') as f:
-        if FileNotFoundError or json.JSONDecodeError:
+    try:
+        with open(ALERTS, 'r') as f:
+            active_alerts = json.load(f)
+        print(f"Loaded {len(active_alerts)} active alerts.")
+            
+    except (FileNotFoundError, json.JSONDecodeError):
             print("Alerts file not found or invalid. Starts with no alerts")
             active_alerts = []
-        active_alerts = json.load(f)
-    print(f"Loaded {len(active_alerts)} active alerts.")
-
 
 def save_alerts():
     """Saves current alerts to JSON file."""
@@ -123,6 +126,22 @@ async def alert(prefix):
 
 @alert.command (name="add")
 async def add_alert(prefix, crypto: str, condition: str, price: float):
+    crypto_id = crypto.lower()
+    valid_url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}"
+    try:
+        async with aiohttp.ClientSession() as session:
+            async with session.get(valid_url) as response:
+                if response.status == 404: # wrong crypto name or doesn't exist
+                    await prefix.send(f"❌ **Error:** Could not find a cryptocurrency named {crypto}.")
+                    return
+                if response.status != 200:
+                    await prefix.send("⚠️ Could not fetch Cryptocurrency price. Please try again later.")
+                    return
+    except Exception as e:
+        print(f"Crypyo Validation Error")
+        await prefix.send("⚠️ Could not fetch Cryptocurrency price. Please try again later.")
+        return
+
     if condition not in ['>', '<']:
         await prefix.send("Invalid Condition. Please use `<` or `>`.")
         return
@@ -135,6 +154,39 @@ async def add_alert(prefix, crypto: str, condition: str, price: float):
     active_alerts.append(new_alert)
     save_alerts()
     await prefix.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
+
+@alert.command(name="list")
+async def list_alerts(prefix):
+    user_alerts = []
+    for i, alert in enumerate(active_alerts):
+        if alert['user_id'] == prefix.author.id:
+            user_alerts.append((i,alert))
+    if not user_alerts:
+        await prefix.send("You have no active alerts. Set one with -alert add <crypto> <condition> <price>.")
+        return
+    message = "Your active alerts:\n```\n"
+    for alert_id, alert in user_alerts:
+        crypto = alert['crypto'].capitalize()
+        condition = alert['condition']
+        price = f"${alert['price']:,.2f}"
+        message += f"ID: {alert_id} | {crypto} {condition} {price}\n"
+    message += "```\nUse the ID to edit or remove an alert."
+    await prefix.send(message)
+
+@alert.command(name="remove")
+async def remove_alert(prefix, alert_id: int):
+    if not(0<=alert_id < len(active_alerts)):
+        await prefix.send(f"Error: Invalid ID. There is no alert with ID {alert_id}. Use -alert list to see valid IDs")
+        return 
+    if active_alerts[alert_id]['user_id'] != prefix.author.id:
+        await prefix.send("Error: You can only remove your own alerts.")
+        return
+    removed = active_alerts.pop(alert_id)
+    save_alerts()
+    crypto = removed['crypto'].capitalize()
+    condition = removed['condition']
+    price = f"${removed['price']:,.2f}"
+    await prefix.send(f"✅ Alert removed: Your alert for **{crypto} {condition} {price}** has been deleted")
 
 @tasks.loop(seconds=60)
 async def check_prices():
@@ -184,8 +236,6 @@ async def check_prices():
 
             else:
                 print(f"Error fetching prices, status: {response.status}")
-
-
 
 @tasks.loop(minutes=10)
 async def fetch_rss():
