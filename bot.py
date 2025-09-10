@@ -162,7 +162,7 @@ async def set_rss_interval(prefix, new_interval: int):
     fetch_rss.change_interval(minutes=new_interval)
     bot_config['rss_interval_minutes'] = new_interval
     save_configs()
-    await prefix.send(f"✅ RSS poll interval is now ** {new_interval} minutes**.")
+    await fetch_rss.send(f"✅ RSS poll interval is now ** {new_interval} minutes**.")
 
 @set_rss_interval.error
 async def interval_error(prefix,error):
