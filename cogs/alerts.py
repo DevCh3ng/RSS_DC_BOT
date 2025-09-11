@@ -127,4 +127,6 @@ class Alerts(commands.Cog):
         price = f"${removed['price']:,.2f}"
         await prefix.send(f"✅ Alert removed: Your alert for **{crypto} {condition} {price}** has been deleted")
 
+async def setup(bot):
+    await bot.add_cog(Alerts(bot))
     

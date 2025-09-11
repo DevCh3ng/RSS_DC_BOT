@@ -2,7 +2,7 @@ import discord
 from discord.ext import tasks, commands
 import feedparser
 import time
-class RSS(commands.cog):
+class RSS(commands.Cog):
     def __init__(self,bot):
         self.bot = bot 
         saved_interval = self.bot.bot_config.get('rss_interval_minutes', self.bot.DEFAULT_RSS_INTERVAL)
@@ -70,7 +70,7 @@ class RSS(commands.cog):
         self.bot.save_configs()
         await prefix.send(f"✅ RSS poll interval is now ** {new_interval} minutes**.")
 
-    async def setup(bot):
-        await bot.add_cog(RSS(bot))
+async def setup(bot):
+    await bot.add_cog(RSS(bot))
 
 
