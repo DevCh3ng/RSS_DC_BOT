@@ -97,6 +97,9 @@ async def prefix_ping(prefix):
 
 async def main():
     async with bot:
+        bot.load_configs()
+        bot.load_history()
+        bot.load_alerts
         await load_cogs()
         await bot.start(TOKEN)
 
