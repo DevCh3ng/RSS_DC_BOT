@@ -52,9 +52,6 @@ bot.save_history = lambda: save_data(bot.HISTORY, bot.posted_articles)
 @bot.event
 async def on_ready():
     print(f'{bot.user} has connected to Discord')
-    bot.load_history()
-    bot.load_alerts()
-    bot.load_configs()
 
 async def load_cogs():
     for filename in os.listdir('./cogs'):
@@ -68,9 +65,6 @@ async def prefix_ping(prefix):
 
 async def main():
     async with bot:
-        bot.load_configs()
-        bot.load_history()
-        bot.load_alerts
         await load_cogs()
         await bot.start(TOKEN)
 
