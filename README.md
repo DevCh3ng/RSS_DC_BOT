@@ -11,7 +11,7 @@ This is a simple Discord bot that can monitor RSS feeds and send alerts for cryp
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/RSS_DC_BOT.git
+   git clone https://github.com/DevCh3ng/RSS_DC_BOT.git
    cd RSS_DC_BOT
    ```
 
