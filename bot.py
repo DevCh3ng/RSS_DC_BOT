@@ -26,55 +26,26 @@ bot.DEFAULT_RSS_INTERVAL = 10
 
 bot.CHANNEL_ID = int(CID)
 
-def load_history(bot):
-    """Loads the history of posted article links from file."""
-    try: 
-        with open(bot.HISTORY, 'r') as f:    
-            bot.posted_articles = json.load(f)
-        print(f"Loaded {len(bot.posted_articles)} articles from history.")
-    except(FileNotFoundError, json.JSONDecodeError):
-        print("History file not found. Creating")
-        bot.posted_articles = {}
-
-def load_alerts(bot):
-    """Load alert.json"""
+def load_data(file_path):
+    """Loads data from a JSON file."""
     try:
-        with open(bot.ALERTS, 'r') as f:
-            bot.active_alerts = json.load(f)
-        print(f"Loaded {len(bot.active_alerts)} alerts from history.")
-            
+        with open(file_path, 'r') as f:
+            return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError):
-            print("Alert file not found. Creating")
-            bot.active_alerts = []
+        return {}
 
-def load_configs(bot):
-    """Load bot configs to configs.json"""
-    try:
-        with open(bot.CONFIG, 'r') as f:
-            bot.bot_config = json.load(f)
-        print(f"Loaded {len(bot.bot_config)} configs from history.")
-    except (FileNotFoundError, json.JSONDecodeError):
-        print("Config file not found. Creating")
-        bot.bot_config = {}
+def save_data(file_path, data):
+    """Saves data to a JSON file."""
+    with open(file_path, 'w') as f:
+        json.dump(data, f, indent=4)
 
-def save_history(bot):
-    with open(bot.HISTORY, 'w') as f:
-        json.dump(bot.posted_articles, f, indent = 4)
+bot.posted_articles = load_data(bot.HISTORY)
+bot.active_alerts = load_data(bot.ALERTS)
+bot.bot_config = load_data(bot.CONFIG)
 
-def save_alerts(bot):
-    with open(bot.ALERTS, 'w') as f:
-        json.dump(bot.active_alerts, f, indent=4)
-
-def save_configs(bot):
-    with open(bot.CONFIG, 'w') as f:
-        json.dump(bot.bot_config, f, indent=4)
-
-bot.load_configs = lambda: load_configs(bot)
-bot.save_configs = lambda: save_configs(bot)
-bot.load_alerts = lambda: load_alerts(bot)
-bot.save_alerts = lambda: save_alerts(bot)
-bot.load_history = lambda: load_history(bot)
-bot.save_history = lambda: save_history(bot)
+bot.save_configs = lambda: save_data(bot.CONFIG, bot.bot_config)
+bot.save_alerts = lambda: save_data(bot.ALERTS, bot.active_alerts)
+bot.save_history = lambda: save_data(bot.HISTORY, bot.posted_articles)
 
 # event: on_ready
 # runs once it got connected to discord
