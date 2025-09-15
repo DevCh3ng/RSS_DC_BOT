@@ -67,11 +67,11 @@ class Alerts(commands.Cog):
             self.bot.active_alerts[:] = [alert for alert in self.bot.active_alerts if alert not in triggered_alerts]
             self.bot.save_alerts()
 
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, help="Manages price alerts for cryptocurrencies.")
     async def alert(self,ctx):
         await ctx.send("Alert command. Use `-alert add <crypto> <condition> <price>`")
 
-    @alert.command (name="add")
+    @alert.command (name="add", help="Adds a new price alert. Usage: `-alert add <crypto> <condition> <price>`")
     async def add_alert(self,ctx, crypto: str, condition: str, price: float):
         crypto_id = crypto.lower()
         valid_url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}"
@@ -101,7 +101,7 @@ class Alerts(commands.Cog):
         self.bot.save_alerts()
         await ctx.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
     
-    @alert.command(name="list")
+    @alert.command(name="list", help="Lists your active price alerts.")
     async def list_alerts(self,ctx):
         user_alerts = []
         for i, alert in enumerate(self.bot.active_alerts):
@@ -121,7 +121,7 @@ class Alerts(commands.Cog):
         message += "```\nUse the ID to remove an alert."
         await ctx.send(message)
 
-    @alert.command(name="remove")
+    @alert.command(name="remove", help="Removes a price alert by its ID. Usage: `-alert remove <ID>`")
     async def remove_alert(self,ctx, alert_id: int):
         if not(0 <= alert_id < len(self.bot.active_alerts)):
             await ctx.send(f"Error: Invalid ID. There is no alert with ID {alert_id}. Use `-alert list` to see valid IDs")

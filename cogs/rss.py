@@ -56,7 +56,7 @@ class RSS(commands.Cog):
     async def fetch_rss(self):
         await self.perform_rss_check()
     
-    @commands.group(invoke_without_command=True)
+    @commands.group(invoke_without_command=True, help="Manages RSS feeds and settings.")
     async def rss(self,prefix):
         curr_interval = self.fetch_rss.minutes
         feeds = self.bot.bot_config.get('rss_feeds', [])
@@ -68,7 +68,7 @@ class RSS(commands.Cog):
                 message += f"{i+1}. {url}\n"
         await prefix.send(message)
     
-    @rss.command(name="add")
+    @rss.command(name="add", help="Adds a new RSS feed. Usage: `-rss add <url>`")
     @commands.has_permissions(administrator=True)
     async def add_rss_feed(self, prefix, url: str):
         if 'rss_feeds' not in self.bot.bot_config:
@@ -77,7 +77,7 @@ class RSS(commands.Cog):
         self.bot.save_configs()
         await prefix.send(f"✅ RSS feed added: {url}")
 
-    @rss.command(name="remove")
+    @rss.command(name="remove", help="Removes an RSS feed by its index. Usage: `-rss remove <index>`")
     @commands.has_permissions(administrator=True)
     async def remove_rss_feed(self, prefix, index: int):
         if 'rss_feeds' in self.bot.bot_config and 1 <= index <= len(self.bot.bot_config['rss_feeds']):
@@ -87,7 +87,7 @@ class RSS(commands.Cog):
         else:
             await prefix.send(f"❌ Invalid index. Use `-rss` to see the list of feeds.")
 
-    @rss.command(name="interval")
+    @rss.command(name="interval", help="Sets the interval for checking for new RSS articles. Usage: `-rss interval <minutes>`")
     @commands.has_permissions(administrator=True)
     async def set_rss_interval(self, prefix, new_interval: int):
         if new_interval < self.bot.MIN_RSS_INTERVAL:

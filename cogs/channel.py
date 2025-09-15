@@ -4,8 +4,8 @@ class Channel(commands.Cog):
     """Inviter will decide the bot's dedicated posting channel"""
     def __init__(self,bot):
         self.bot = bot
-    @commands.command(name = "setchannel")
-    @commands.has_permissions(manage_channel = True)
+    @commands.command(name = "setchannel", help="Sets the channel for RSS updates. Usage: `-setchannel #channel-name`")
+    @commands.has_permissions(manage_channels = True)
     async def set_channel(self, prefix, channel: discord.TextChannel):
         guild_id = str(prefix.guild.id)
         if guild_id not in self.bot.bot_config:

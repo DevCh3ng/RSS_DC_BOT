@@ -12,7 +12,7 @@ CID = os.getenv('CHANNEL_ID')
 
 intents = discord.Intents.default()
 intents.message_content = True
-bot = commands.Bot(command_prefix="-", intents=intents) # new bot instance
+bot = commands.Bot(command_prefix="-", intents=intents, help_command=None) # new bot instance
 
 bot.HISTORY = "history.json"
 bot.ALERTS = "alerts.json"
