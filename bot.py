@@ -58,6 +58,33 @@ async def load_cogs():
         if filename.endswith('.py'):
             await bot.load_extension(f'cogs.{filename[:-3]}')
 
+@bot.event
+async def guild_join(guild):
+    inviter = None
+    async for entry in guild.audit_logs(action=discord.AuditLogAction.bot_add):
+        if entry.target == bot.user:
+            inviter = entry.user
+            break
+    if inviter:
+        message = await inviter.send(f"Hello! I've joined your server: **{guild.name}**. "
+                                     f"Please specify a channel where I can post RSS updates. "
+                                     f"You can do this by mentioning the channel (#your-channel-name). ")
+        def check(m):
+            return m.author == inviter and m.guild is None and m.channel_mentions
+        try:
+            response = await bot.wait_for('message', check=check, timeout=240)
+            channel = response.channel_mentions[0]
+
+            if str(guild.id) not in bot.bot_config:
+                bot.bot_config[str(guild.id)] = {}
+            bot.bot_config[str(guild.id)]["channel_id"] = channel.id
+            bot.save_configs()
+
+            await inviter.send(f"Great! I will now post RSS updates in {channel.mention}.")
+        except asyncio.TimeoutError:
+            await inviter.send("Please use the '-setchannel' command to set bot channel. ")
+            
+
 # Prefix command for :ping
 @bot.command(name="ping")
 async def prefix_ping(prefix):
