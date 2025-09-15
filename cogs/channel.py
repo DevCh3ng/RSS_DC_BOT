@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 class Channel(commands.Cog):
+    """Inviter will decide the bot's dedicated posting channel"""
     def __init__(self,bot):
         self.bot = bot
     @commands.command(name = "setchannel")
@@ -22,5 +23,5 @@ class Channel(commands.Cog):
             await prefix.send("Please specify a channel. ")
 async def setup(bot):
     await bot.add_cog(Channel(bot))
-    
+
 
