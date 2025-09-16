@@ -7,7 +7,7 @@ class Help(commands.Cog):
         self.bot = bot
 
     @commands.command(name="help")
-    async def help(self, ctx):
+    async def help(self, prefix):
         embed = discord.Embed(
             title="Bot Commands",
             description="Here are the usable commands:",
@@ -37,7 +37,7 @@ class Help(commands.Cog):
             if command_list:
                 embed.add_field(name=cog_name, value="\n".join(command_list), inline=False)
 
-        await ctx.send(embed=embed)
+        await prefix.send(embed=embed)
 
 async def setup(bot):
     await bot.add_cog(Help(bot))

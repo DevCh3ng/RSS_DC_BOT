@@ -1,13 +1,13 @@
 # RSS & Crypto Alert Discord Bot
 
-A versatile Discord bot that provides cryptocurrency price alerts, on-demand price checks, and RSS feed monitoring to keep your server updated.
+A powerful and highly configurable Discord bot that provides cryptocurrency price alerts, on-demand price checks, and advanced RSS feed monitoring to keep your server organized and updated.
 
 ## Features
 
-- **RSS Feed Monitoring:** Automatically posts new articles from any RSS feed into a designated channel.
+- **Advanced RSS Monitoring:** Assign RSS feeds to specific channels, filter articles by keywords, and set server-wide and per-channel feed limits.
+- **Granular Permissions:** A role-based permission system allows server owners to delegate RSS management to specific roles without granting full admin privileges.
 - **Crypto Price Alerts:** Get a direct message when a cryptocurrency of your choice goes above or below a certain price.
 - **On-Demand Price Checks:** Instantly fetch detailed price information for any cryptocurrency.
-- **Easy Management:** Simple and intuitive commands for managing feeds, alerts, and settings.
 
 ## Commands
 
@@ -20,12 +20,64 @@ All commands use the `-` prefix.
 -   `**-ping**`
     Checks if the bot is online and responsive.
 
-### Configuration
+---
+
+### Server Administration (Admins Only)
+
+These commands are for server owners and administrators to configure the bot's core settings and permissions.
+
+-   `**-rssadmin add @role**`
+    Allows a role to manage RSS feeds (use `-rss` commands).
+
+-   `**-rssadmin remove @role**`
+    Removes a role's ability to manage RSS feeds.
+
+-   `**-rssadmin list**`
+    Lists all roles currently authorized to manage RSS feeds.
+
+-   `**-rss limit <count>**`
+    Sets the maximum total number of RSS feeds allowed on this server (max 30).
+
+-   `**-channelconfig limit #channel <count>**`
+    Sets a specific limit on how many RSS feeds can be assigned to a single channel.
+
+-   `**-channelconfig allow_multiple #channel <true|false>**`
+    Toggles whether a channel can have more than one RSS feed assigned to it.
+
+---
+
+### RSS Feed Management
+
+Can be used by Administrators or users with a role authorized by `-rssadmin`.
 
 -   `**-setchannel #channel-name**`
-    Sets the specific channel where the bot will post all RSS feed updates. This requires "Manage Channels" permission.
+    Sets the default channel for RSS updates. Feeds added without a specific channel will post here.
 
-### Crypto Commands
+-   `**-rss**`
+    Shows the current RSS settings for the server, including the check interval, default channel, and a list of all configured feeds with their channels and keywords.
+
+-   `**-rss add <url> [#channel]**`
+    Adds a new RSS feed. You can optionally specify a channel for it to post in.
+    *Example: `-rss add http://www.theverge.com/rss/index.xml #tech-news`*
+
+-   `**-rss remove <index>**`
+    Removes an RSS feed using its index number from the `-rss` list.
+
+-   `**-rss interval <minutes>**`
+    Sets the global interval for how often the bot checks for new articles (min 5).
+
+-   `**-rss keywords add <index> <keyword>**`
+    Adds a keyword filter to a feed. The bot will only post articles from this feed if they contain the keyword.
+
+-   `**-rss keywords remove <index> <keyword>**`
+    Removes a keyword filter from a feed.
+
+-   `**-rss keywords list <index>**`
+    Lists all active keywords for a specific feed.
+
+---
+
+### Crypto Commands (Available to all users)
 
 -   `**-price <cryptocurrency>**`
     Fetches the current price, 24h change, market cap, and volume for a specific crypto.
@@ -39,25 +91,7 @@ All commands use the `-` prefix.
     Lists all of your currently active price alerts with their corresponding IDs.
 
 -   `**-alert remove <ID>**`
-    Removes a specific price alert using the ID from the alert list.
-    *Example: `-alert remove 3`*
-
-### RSS Commands
-
--   `**-rss**`
-    Shows the current RSS settings, including the check interval and the list of all configured feeds with their index numbers.
-
--   `**-rss add <url>**`
-    Adds a new RSS feed to the monitoring list. Requires administrator permissions.
-    *Example: `-rss add http://www.theverge.com/rss/index.xml`*
-
--   `**-rss remove <index>**`
-    Removes an RSS feed from the list using its index number. Requires administrator permissions.
-    *Example: `-rss remove 2`*
-
--   `**-rss interval <minutes>**`
-    Sets how often the bot checks for new articles. The minimum interval is 5 minutes. Requires administrator permissions.
-    *Example: `-rss interval 15`*
+    Removes a specific price alert using the ID from your alert list.
 
 ## Setup
 
@@ -73,12 +107,10 @@ All commands use the `-` prefix.
     ```
 
 3.  **Create a `.env` file:**
-    Create a `.env` file in the root directory and add your bot's token and a default channel ID.
+    Create a `.env` file in the root directory and add your bot's token.
     ```env
     DISCORD_TOKEN=your_discord_bot_token
-    CHANNEL_ID=your_default_discord_channel_id
     ```
-    *Note: The `CHANNEL_ID` is used as a fallback. It is recommended to set a channel per-server using the `-setchannel` command.*
 
 4.  **Run the bot:**
     ```bash

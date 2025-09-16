@@ -68,48 +68,48 @@ class Alerts(commands.Cog):
             self.bot.save_alerts()
 
     @commands.group(invoke_without_command=True, help="Manages price alerts for cryptocurrencies.")
-    async def alert(self,ctx):
-        await ctx.send("Alert command. Use `-alert add <crypto> <condition> <price>`")
+    async def alert(self,prefix):
+        await prefix.send("Alert command. Use `-alert add <crypto> <condition> <price>`")
 
     @alert.command (name="add", help="Adds a new price alert. Usage: `-alert add <crypto> <condition> <price>`")
-    async def add_alert(self,ctx, crypto: str, condition: str, price: float):
+    async def add_alert(self,prefix, crypto: str, condition: str, price: float):
         crypto_id = crypto.lower()
         valid_url = f"https://api.coingecko.com/api/v3/coins/{crypto_id}"
         try:
             async with aiohttp.ClientSession() as session:
                 async with session.get(valid_url) as response:
                     if response.status == 404:
-                        await ctx.send(f"❌ **Error:** Could not find a cryptocurrency named `{crypto}`.")
+                        await prefix.send(f"❌ **Error:** Could not find a cryptocurrency named `{crypto}`.")
                         return
                     response.raise_for_status()
         except aiohttp.ClientError as e:
             print(f"Crypto Validation Error: {e}")
-            await ctx.send("⚠️ Could not fetch cryptocurrency data. Please try again later.")
+            await prefix.send("⚠️ Could not fetch cryptocurrency data. Please try again later.")
             return
 
         if condition not in ['>', '<']:
-            await ctx.send("Invalid condition. Please use `<` or `>`.")
+            await prefix.send("Invalid condition. Please use `<` or `>`.")
             return
         
         new_alert={
-            'user_id' : ctx.author.id,
+            'user_id' : prefix.author.id,
             'crypto' : crypto.lower(),
             'condition' : condition,
             'price' : price
         }
         self.bot.active_alerts.append(new_alert)
         self.bot.save_alerts()
-        await ctx.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
+        await prefix.send(f"✅ Alert set: I will notify you when **{crypto}** is **{condition} ${price:,.2f}**.")
     
     @alert.command(name="list", help="Lists your active price alerts.")
-    async def list_alerts(self,ctx):
+    async def list_alerts(self,prefix):
         user_alerts = []
         for i, alert in enumerate(self.bot.active_alerts):
-            if alert['user_id'] == ctx.author.id:
+            if alert['user_id'] == prefix.author.id:
                 user_alerts.append((i,alert))
 
         if not user_alerts:
-            await ctx.send("You have no active alerts. Set one with `-alert add <crypto> <condition> <price>`.")
+            await prefix.send("You have no active alerts. Set one with `-alert add <crypto> <condition> <price>`.")
             return
 
         message = "Your active alerts:\n```\n"
@@ -119,16 +119,16 @@ class Alerts(commands.Cog):
             price = f"${alert['price']:,.2f}"
             message += f"ID: {alert_id} | {crypto} {condition} {price}\n"
         message += "```\nUse the ID to remove an alert."
-        await ctx.send(message)
+        await prefix.send(message)
 
     @alert.command(name="remove", help="Removes a price alert by its ID. Usage: `-alert remove <ID>`")
-    async def remove_alert(self,ctx, alert_id: int):
+    async def remove_alert(self,prefix, alert_id: int):
         if not(0 <= alert_id < len(self.bot.active_alerts)):
-            await ctx.send(f"Error: Invalid ID. There is no alert with ID {alert_id}. Use `-alert list` to see valid IDs")
+            await prefix.send(f"Error: Invalid ID. There is no alert with ID {alert_id}. Use `-alert list` to see valid IDs")
             return 
         
-        if self.bot.active_alerts[alert_id]['user_id'] != ctx.author.id:
-            await ctx.send("Error: You can only remove your own alerts.")
+        if self.bot.active_alerts[alert_id]['user_id'] != prefix.author.id:
+            await prefix.send("Error: You can only remove your own alerts.")
             return
             
         removed = self.bot.active_alerts.pop(alert_id)
@@ -136,7 +136,7 @@ class Alerts(commands.Cog):
         crypto = removed['crypto'].capitalize()
         condition = removed['condition']
         price = f"${removed['price']:,.2f}"
-        await ctx.send(f"✅ Alert removed: Your alert for **{crypto} {condition} {price}** has been deleted")
+        await prefix.send(f"✅ Alert removed: Your alert for **{crypto} {condition} {price}** has been deleted")
 
 async def setup(bot):
     await bot.add_cog(Alerts(bot))
