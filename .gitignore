@@ -5,4 +5,4 @@ configs.json
 config.json
 history.json
 /cogs/__pycache__
-
+.gitignore
