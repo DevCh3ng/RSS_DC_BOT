@@ -1,8 +1,0 @@
-.gitignore
-.env
-alerts.json
-configs.json
-config.json
-history.json
-/cogs/__pycache__
-.gitignore
