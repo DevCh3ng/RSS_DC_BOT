@@ -47,6 +47,25 @@ bot.save_configs = lambda: save_data(bot.CONFIG, bot.bot_config)
 bot.save_alerts = lambda: save_data(bot.ALERTS, bot.active_alerts)
 bot.save_history = lambda: save_data(bot.HISTORY, bot.posted_articles)
 
+async def log_action(bot, guild, message, author):
+    """Sends a log message to the configured audit channel."""
+    guild_config = bot.bot_config.get(str(guild.id), {})
+    log_channel_id = guild_config.get('log_channel')
+
+    if log_channel_id:
+        log_channel = guild.get_channel(log_channel_id)
+        if log_channel:
+            embed = discord.Embed(description=message, color=discord.Color.blue())
+            embed.set_author(name=author.display_name, icon_url=author.avatar.url if author.avatar else author.default_avatar.url)
+            embed.timestamp = discord.utils.utcnow()
+            try:
+                await log_channel.send(embed=embed)
+            except discord.Forbidden:
+                # Bot might not have permissions to send messages in the channel
+                pass
+
+bot.log_action = log_action
+
 # event: on_ready
 # runs once it got connected to discord
 @bot.event

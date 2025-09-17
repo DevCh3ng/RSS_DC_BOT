@@ -24,6 +24,7 @@ class Admin(commands.Cog):
         admin_roles.append(role.id)
         self.bot.save_configs()
         await prefix.send(f"✅ The role {role.mention} can now manage RSS feeds.")
+        await self.bot.log_action(self.bot, prefix.guild, f"Role {role.mention} was given RSS admin permissions.", prefix.author)
 
     @rssadmin.command(name="remove", help="Remove a role's ability to manage RSS feeds. Usage: `-rssadmin remove @role`")
     @commands.has_permissions(administrator=True)
@@ -42,6 +43,7 @@ class Admin(commands.Cog):
         admin_roles.remove(role.id)
         self.bot.save_configs()
         await prefix.send(f"✅ The role {role.mention} can no longer manage RSS feeds.")
+        await self.bot.log_action(self.bot, prefix.guild, f"Role {role.mention} was removed from RSS admin permissions.", prefix.author)
 
     @rssadmin.command(name="list", help="List roles that can manage RSS feeds.")
     @commands.has_permissions(administrator=True)
@@ -79,6 +81,7 @@ class Admin(commands.Cog):
         channel_settings['limit'] = limit
         self.bot.save_configs()
         await prefix.send(f"✅ The RSS feed limit for {channel.mention} is now **{limit}**.")
+        await self.bot.log_action(self.bot, prefix.guild, f"RSS feed limit for {channel.mention} was set to **{limit}**.", prefix.author)
 
     @channelconfig.command(name="allow_multiple", help="Allow/disallow multiple feeds in a channel. Usage: `-channelconfig allow_multiple #channel <true|false>`")
     @commands.has_permissions(administrator=True)
@@ -90,6 +93,33 @@ class Admin(commands.Cog):
         self.bot.save_configs()
         status = "now allows" if value else "no longer allows"
         await prefix.send(f"✅ {channel.mention} {status} multiple RSS feeds.")
+        await self.bot.log_action(self.bot, prefix.guild, f"Channel {channel.mention} {status} multiple RSS feeds.", prefix.author)
+
+    @commands.group(name="adminlog", help="Configure the audit log for bot actions.", invoke_without_command=True)
+    @commands.has_permissions(administrator=True)
+    async def adminlog(self, prefix):
+        await prefix.send("Use `-adminlog <set|disable> <#channel>` to configure the audit log.")
+
+    @adminlog.command(name="set", help="Set the channel for audit logs. Usage: `-adminlog set #channel`")
+    @commands.has_permissions(administrator=True)
+    async def set_log_channel(self, prefix, channel: discord.TextChannel):
+        guild_config = self.bot.bot_config.setdefault(str(prefix.guild.id), {})
+        guild_config['log_channel'] = channel.id
+        self.bot.save_configs()
+        await prefix.send(f"✅ Bot actions will now be logged in {channel.mention}.")
+        await self.bot.log_action(self.bot, prefix.guild, f"Audit log channel was set to {channel.mention}.", prefix.author)
+
+    @adminlog.command(name="disable", help="Disable the audit log.")
+    @commands.has_permissions(administrator=True)
+    async def disable_log_channel(self, prefix):
+        guild_config = self.bot.bot_config.setdefault(str(prefix.guild.id), {})
+        if 'log_channel' in guild_config:
+            del guild_config['log_channel']
+            self.bot.save_configs()
+            await prefix.send("✅ Audit log disabled.")
+            await self.bot.log_action(self.bot, prefix.guild, "Audit log was disabled.", prefix.author)
+        else:
+            await prefix.send("⚠️ Audit log is not currently enabled.")
 
 async def setup(bot):
     await bot.add_cog(Admin(bot))
