@@ -13,6 +13,8 @@ def is_rss_admin():
         return any(role.id in admin_roles_ids for role in ctx.author.roles)
     return commands.check(predicate)
 
+import asyncio
+
 class RSS(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -23,8 +25,34 @@ class RSS(commands.Cog):
     def cog_unload(self):
         self.fetch_rss.cancel()
 
+    async def fetch_feed(self, url):
+        """Fetches and parses a single RSS feed."""
+        try:
+            return await self.bot.loop.run_in_executor(None, lambda: feedparser.parse(url))
+        except Exception as e:
+            print(f"Error fetching feed {url}: {e}")
+            return None
+
     async def perform_rss_check(self):
         await self.bot.wait_until_ready()
+
+        # 1. Gather all unique feed URLs
+        unique_urls = set()
+        for guild_id, guild_config in self.bot.bot_config.items():
+            for feed_obj in guild_config.get('rss_feeds', []):
+                unique_urls.add(feed_obj['url'])
+
+        if not unique_urls:
+            return
+
+        # 2. Fetch all unique feeds concurrently
+        fetch_tasks = [self.fetch_feed(url) for url in unique_urls]
+        feed_results = await asyncio.gather(*fetch_tasks)
+
+        # 3. Create a cache of the fetched data
+        feed_cache = {url: feed for url, feed in zip(unique_urls, feed_results) if feed}
+
+        # 4. Distribute updates to guilds
         for guild in self.bot.guilds:
             guild_config = self.bot.bot_config.get(str(guild.id), {})
             feeds = guild_config.get('rss_feeds', [])
@@ -32,15 +60,16 @@ class RSS(commands.Cog):
 
             for feed_obj in feeds:
                 url = feed_obj['url']
-                keywords = feed_obj.get('keywords', [])
-                feed = await self.bot.loop.run_in_executor(None, lambda: feedparser.parse(url))
+                cached_feed = feed_cache.get(url)
 
-                if not feed.entries:
+                if not cached_feed or not cached_feed.entries:
                     continue
 
-                latest = feed.entries[0]
+                latest = cached_feed.entries[0]
                 if latest.link not in self.bot.posted_articles:
+                    keywords = feed_obj.get('keywords', [])
                     content_to_check = (latest.title + ' ' + getattr(latest, 'summary', '')).lower()
+                    
                     if not keywords or any(k.lower() in content_to_check for k in keywords):
                         target_channel_id = feed_obj.get('channel_id') or default_channel_id
                         if not target_channel_id:
@@ -56,12 +85,13 @@ class RSS(commands.Cog):
                                 description=getattr(latest, 'summary', "A new article has been posted"),
                                 color=discord.Color.blue()
                             )
-                            embed.set_footer(text=feed.feed.title)
+                            embed.set_footer(text=cached_feed.feed.title)
                             if hasattr(latest, 'media_content') and latest.media_content:
                                 image_url = latest.media_content[0]['url']
                                 embed.set_image(url=image_url)
                             await channel.send(embed=embed)
         
+        # Prune history
         curr_time = time.time()
         three_hours = 3 * 60 * 60
         prune = {
